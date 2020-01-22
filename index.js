@@ -22,7 +22,7 @@ async function loginUser(page, user, pass) {
 	});
 	await page.waitForFunction((user) => {
 		var elm = document.getElementById('menuAccountUsername');
-		if (elm) {
+		if (elm && elm.innerText) {
 			return elm.innerText.toLowerCase() == user.toLowerCase();
 		}
 		return false;
