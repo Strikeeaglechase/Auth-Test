@@ -21,3 +21,5 @@ async function run() {
 	await loginUser(page, USERNAME, PASSWORD);
 	await browser.close();
 };
+
+run();
