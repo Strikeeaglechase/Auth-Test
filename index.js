@@ -21,6 +21,7 @@ async function loginUser(page, user, pass) {
 		elms[1].click();
 	});
 	await page.waitForFunction((user) => {
+		console.log(user);
 		var elm = document.getElementById('menuAccountUsername');
 		if (elm && elm.innerText) {
 			return elm.innerText.toLowerCase() == user.toLowerCase();
