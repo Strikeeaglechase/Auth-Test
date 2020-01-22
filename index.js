@@ -20,7 +20,7 @@ async function loginUser(page, user, pass) {
 		var elms = document.getElementsByClassName('accountButton');
 		elms[1].click();
 	});
-	await page.waitForFunction((user) => document.getElementById('menuAccountUsername').innerText == user, user);
+	await page.waitForFunction((user) => document.getElementById('menuAccountUsername').innerText.toLowerCase() == user.toLowerCase(), user);
 	await page.screenshot({
 		path: 'example.png'
 	});
