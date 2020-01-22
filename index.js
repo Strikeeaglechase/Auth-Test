@@ -6,7 +6,7 @@ async function loginUser(page, user, pass) {
 	await page.screenshot({
 		path: 'example.png'
 	});
-	await page.waitForSelector('.button lgn');
+	await page.waitForSelector('#signedOutHeaderBar');
 	var btn = await page.evaluate(() => {
 		var elms = document.getElementsByClassName('button lgn');
 		elms[0].click();
