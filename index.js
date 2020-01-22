@@ -1,3 +1,11 @@
+const low = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
+const adapter = new FileSync('db.json');
+const db = low(adapter);
+db.defaults({
+		users: {}
+	})
+	.write()
 const puppeteer = require('puppeteer');
 const USERNAME = 'Strikeeagle2';
 const PASSWORD = '1329043';
@@ -80,4 +88,18 @@ async function run(user) {
 };
 
 
-run('Strikeeaglekid');
+// run('Strikeeaglekid');
+const ID = '100202';
+if (!db.get('users').find({
+		id: ID
+	}).value()) {
+	db.get('users').push({
+		id: ID
+	});
+}
+db.get('users').find({
+	id: ID
+}).assign({
+	id: ID,
+	val: 'Hi!'
+}).write();
