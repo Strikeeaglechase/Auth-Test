@@ -11,7 +11,7 @@ async function loginUser(page, user, pass) {
 
 	await page.waitForSelector('#accName');
 	const userBox = await page.$('#accName');
-	const passBox = await page.$('$accPass');
+	const passBox = await page.$('#accPass');
 	await userBox.click();
 	await page.keyboard.type(user);
 	await passBox.click();
