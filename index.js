@@ -58,9 +58,14 @@ async function loginSocial(page, user, pass) {
 		elms[0].click();
 	});
 
-	await page.waitForSelector('#popupHolder', {
-		visible: true
-	});
+	await page.waitForFunction((u) => {
+		var elm = document.getElementById('menuAccountUsername');
+		if (elm && elm.innerText) {
+			return elm.innerText.split('\n')[0].toLowerCase() == u.toLowerCase();
+		}
+		return false;
+	}, {}, user);
+
 	await page.screenshot({
 		path: 'example.png'
 	});
