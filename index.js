@@ -3,6 +3,9 @@ const USERNAME = 'Strikeeagle2';
 const PASSWORD = '1329043';
 
 async function loginUser(page, user, pass) {
+	await page.screenshot({
+		path: 'example.png'
+	});
 	await page.waitForSelector('.button lgn');
 	var btn = await page.evaluate(() => {
 		var elms = document.getElementsByClassName('button lgn');
