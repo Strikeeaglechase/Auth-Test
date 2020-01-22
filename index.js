@@ -59,7 +59,7 @@ async function loginSocial(page, user, pass) {
 	});
 
 	await page.waitForFunction((u) => {
-		var elm = document.getElementById('menuAccountUsername');
+		var elm = document.getElementById('profileName');
 		if (elm && elm.innerText) {
 			return elm.innerText.split('\n')[0].toLowerCase() == u.toLowerCase();
 		}
