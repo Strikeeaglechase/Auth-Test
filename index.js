@@ -1,14 +1,28 @@
-const low = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync');
-const adapter = new FileSync('db.json');
-const db = low(adapter);
-db.defaults({
-		users: {}
-	})
-	.write()
+const db = new(require('./simple-db.js'))();
 const puppeteer = require('puppeteer');
+const Discord = require('discord.js');
+db.init({
+	users: [],
+	waitingCodes: []
+});
+
+const client = new Discord.Client();
+
+const PREFIX = 'c!'
+const TOKEN = 'NjUwODAwOTcyNzA4NDQ2MjM5.XimuYA.UHNJg13MuySAYEu_t3xpKLMk3zg'
 const USERNAME = 'Strikeeagle2';
 const PASSWORD = '1329043';
+const allowedRate = 0; //1000 * 60 * 30;
+const CODE_LEN = 10;
+
+function genCode() {
+	const charList = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'.split('');
+	var code = '';
+	while (code.length < CODE_LEN) {
+		code += charList[Math.floor(Math.random() * charList.length)];
+	}
+	return code;
+}
 
 async function loginUser(page, user, pass) {
 	await page.waitForSelector('#signedOutHeaderBar');
@@ -79,7 +93,7 @@ async function loginSocial(page, user, pass) {
 	});
 }
 
-async function run(user) {
+async function sendUserMsg(user, msg) {
 	const browser = await puppeteer.launch();
 	const page = await browser.newPage();
 	await page.goto('https://krunker.io/social.html?p=profile&q=' + user);
@@ -87,19 +101,80 @@ async function run(user) {
 	await browser.close();
 };
 
+async function bindAccount(message, kAccount) {
+	db.read();
+	var dbUser = db.get('users', 'id', message.author.id);
+	if (!dbUser) {
+		dbUser = {
+			id: message.author.id,
+			lastRanCommand: 0
+		}
+		db.data.users.push(dbUser);
+		db.write();
+	}
+	if (Date.now() - dbUser.lastRanCommand < allowedRate) {
+		var minLeft = (allowedRate - (Date.now() - dbUser.lastRanCommand)) / (1000 * 60);
+		message.reply('You have ran that command too many times. Try again in ' + Math.ceil(minLeft) + ' mins');
+		return;
+	}
+	const confirmMsg = await message.channel.send('Please confirm ``' + kAccount + '`` is the correct krunker account (You can only do this once every thirty mins)');
+	await Promise.all([
+		confirmMsg.react('✔'),
+		confirmMsg.react("❌")
+	]);
+	var confirmed = false;
+	try {
+		const filter = (m, user) => user.id == message.author.id;
+		const collected = await confirmMsg.awaitReactions(filter, {
+			max: 1,
+			time: 30000
+		});
+		const reaction = collected.first();
+		if (reaction) {
+			confirmed = reaction.emoji.name == '✔';
+		}
+	} catch (e) {
+		console.log(e);
+	}
+	if (confirmed) {
+		db.read();
+		var u = db.get('users', 'id', message.author.id);
+		var d = Date.now();
+		u.lastRanCommand = d;
+		var code = genCode();
+		db.data.waitingCodes.push({
+			code: code,
+			t: d
+		});
+		db.write();
+		console.log('Sent %s the code %s', kAccount, code);
+		message.reply('Please check your krunker account for the code (This may take a minute to send. The code will expire in 30min)');
+		sendUserMsg(kAccount, code);
+	}
+}
+
+function finishBind() {
+
+}
+
+client.on('ready', () => {
+	console.log('Logged');
+});
+
+client.on('message', message => {
+	if (!message.content.startsWith(PREFIX)) {
+		return;
+	}
+	var args = message.content.substring(PREFIX.length).split(' ');
+	if (args[0] == 'bindAccount') {
+		bindAccount(message, args[1]);
+	}
+	if (args[0] == 'code') {
+		finishBind(message, args[1]);
+	}
+});
+
+client.login(TOKEN);
+
 
 // run('Strikeeaglekid');
-const ID = '100202';
-if (!db.get('users').find({
-		id: ID
-	}).value()) {
-	db.get('users').push({
-		id: ID
-	});
-}
-db.get('users').find({
-	id: ID
-}).assign({
-	id: ID,
-	val: 'Hi!'
-}).write();
