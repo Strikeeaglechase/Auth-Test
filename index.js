@@ -1,6 +1,7 @@
 const db = new(require('./simple-db.js'))();
 const puppeteer = require('puppeteer');
 const Discord = require('discord.js');
+const config = require('dotenv').config().parsed
 db.init({
 	users: [],
 	waitingCodes: []
@@ -9,12 +10,12 @@ db.init({
 const client = new Discord.Client();
 
 const PREFIX = 'c!'
-const TOKEN = 'NjUwODAwOTcyNzA4NDQ2MjM5.XimuYA.UHNJg13MuySAYEu_t3xpKLMk3zg'
-const USERNAME = 'Strikeeagle2';
-const PASSWORD = '1329043';
+const TOKEN = config.TOKEN;
+const USERNAME = config.USERNAME;
+const PASSWORD = config.PASSWORD;
 const allowedRate = 1000 * 60 * 30;
 const CODE_TIMEOUT = 1000 * 60 * 30;
-const CODE_LEN = 10;
+const CODE_LEN = 1000;
 
 function genCode() {
 	const charList = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'.split('');
