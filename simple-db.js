@@ -21,8 +21,10 @@ class Database {
 		var nextProp = path.shift();
 		return this.grabFromPath(path, cur[nextProp]);
 	}
-	get(path, prop, val) {
-		this.read();
+	get(path, prop, val, skipRead) {
+		if (!skipRead) {
+			this.read();
+		}
 		var obj = this.grabFromPath(path);
 		return obj.find(item => item[prop] == val);
 	}

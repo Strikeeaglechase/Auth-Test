@@ -12,7 +12,8 @@ const PREFIX = 'c!'
 const TOKEN = 'NjUwODAwOTcyNzA4NDQ2MjM5.XimuYA.UHNJg13MuySAYEu_t3xpKLMk3zg'
 const USERNAME = 'Strikeeagle2';
 const PASSWORD = '1329043';
-const allowedRate = 0; //1000 * 60 * 30;
+const allowedRate = 1000 * 60 * 30;
+const CODE_TIMEOUT = 1000 * 60 * 30;
 const CODE_LEN = 10;
 
 function genCode() {
@@ -63,6 +64,9 @@ async function runGameLoginTest() {
 };
 
 async function loginSocial(page, user, pass) {
+	await page.screenshot({
+		path: 'example2.png'
+	});
 	await page.waitForSelector('#profileLogin');
 	var loginBtn = await page.$('#profileLogin');
 	await loginBtn.click();
@@ -75,7 +79,7 @@ async function loginSocial(page, user, pass) {
 	await passBox.click();
 	await page.keyboard.type(pass);
 
-	var btn = await page.evaluate(() => {
+	await page.evaluate(() => {
 		var elms = document.getElementsByClassName('accountButton');
 		elms[0].click();
 	});
@@ -98,6 +102,7 @@ async function sendUserMsg(user, msg) {
 	const page = await browser.newPage();
 	await page.goto('https://krunker.io/social.html?p=profile&q=' + user);
 	await loginSocial(page, USERNAME, PASSWORD);
+	console.log('Social login done');
 	await browser.close();
 };
 
@@ -107,7 +112,8 @@ async function bindAccount(message, kAccount) {
 	if (!dbUser) {
 		dbUser = {
 			id: message.author.id,
-			lastRanCommand: 0
+			lastRanCommand: 0,
+			krunkerAccount: undefined
 		}
 		db.data.users.push(dbUser);
 		db.write();
@@ -144,17 +150,29 @@ async function bindAccount(message, kAccount) {
 		var code = genCode();
 		db.data.waitingCodes.push({
 			code: code,
-			t: d
+			t: d,
+			account: kAccount,
+			valid: true
 		});
 		db.write();
 		console.log('Sent %s the code %s', kAccount, code);
 		message.reply('Please check your krunker account for the code (This may take a minute to send. The code will expire in 30min)');
-		sendUserMsg(kAccount, code);
+		// sendUserMsg(kAccount, code);
 	}
 }
 
-function finishBind() {
-
+function finishBind(message, code) {
+	db.read();
+	var c = db.get('waitingCodes', 'code', code);
+	var user = db.get('users', 'id', message.author.id, true);
+	if (c && user && c.valid) {
+		user.krunkerAccount = c.account;
+		c.valid = false;
+		db.write();
+		message.reply('Your account has been linked to ``' + c.account + '``');
+	} else {
+		message.reply('Invalid code');
+	}
 }
 
 client.on('ready', () => {
@@ -176,5 +194,9 @@ client.on('message', message => {
 
 client.login(TOKEN);
 
-
+setInterval(() => {
+	db.read();
+	db.data.waitingCodes = db.data.waitingCodes.filter(c => Date.now() - c.t < CODE_TIMEOUT && c.valid);
+	db.write();
+}, 60 * 1000);
 // run('Strikeeaglekid');
