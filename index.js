@@ -264,7 +264,7 @@ async function redeemKrCode(message, code) {
 		message.reply('Before using a code please link an account');
 		message.delete();
 	}
-	if (!code) {
+	if (!dbCode) {
 		message.reply('Invalid code');
 		return;
 	}
