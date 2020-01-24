@@ -63,7 +63,13 @@ async function grabMailData() {
 	await page.waitForSelector('#mailIcon');
 	const mailIcon = await page.$('#mailIcon');
 	await mailIcon.click();
-	await page.waitForSelector('#mailList');
+	await page.waitForFunction(() => {
+		var mList = document.getElementById('mailList');
+		if (!mList || mList.innerText == 'Loading...') {
+			return false;
+		}
+		return true;
+	});
 	const mailData = await page.evaluate(() => {
 		return windows[29].mailData;
 	});
