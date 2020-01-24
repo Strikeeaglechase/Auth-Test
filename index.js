@@ -15,7 +15,7 @@ const USERNAME = config.USERNAME;
 const PASSWORD = config.PASSWORD;
 const allowedRate = 1000 * 60 * 30;
 const CODE_TIMEOUT = 1000 * 60 * 30;
-const CODE_LEN = 1000;
+const CODE_LEN = 10;
 
 function genCode() {
 	const charList = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'.split('');
@@ -44,6 +44,7 @@ async function loginUser(page, user, pass) {
 		var elms = document.getElementsByClassName('accountButton');
 		elms[1].click();
 	});
+
 	await page.waitForFunction((u) => {
 		var elm = document.getElementById('menuAccountUsername');
 		if (elm && elm.innerText) {
@@ -51,9 +52,6 @@ async function loginUser(page, user, pass) {
 		}
 		return false;
 	}, {}, user);
-	await page.screenshot({
-		path: 'example.png'
-	});
 }
 
 async function runGameLoginTest() {
@@ -92,10 +90,6 @@ async function loginSocial(page, user, pass) {
 		}
 		return false;
 	}, {}, user);
-
-	await page.screenshot({
-		path: 'example.png'
-	});
 }
 
 async function sendUserMsg(user, msg) {
@@ -103,7 +97,24 @@ async function sendUserMsg(user, msg) {
 	const page = await browser.newPage();
 	await page.goto('https://krunker.io/social.html?p=profile&q=' + user);
 	await loginSocial(page, USERNAME, PASSWORD);
-	console.log('Social login done');
+
+	await page.evaluate(() => {
+		var elms = document.getElementsByClassName('giftButton');
+		elms[0].click();
+	});
+	const giftFeild = await page.$('#giftIn');
+	const msgFeild = await page.$('#giftMsg');
+	const giftBtn = await page.$('#postSaleBtn');
+
+	await giftFeild.click();
+	await page.keyboard.type('10');
+	await msgFeild.click();
+	await page.keyboard.type(msg);
+	await new Promise(res => setTimeout(res, 3000));
+	await page.screenshot({
+		path: 'example.png'
+	});
+
 	await browser.close();
 };
 
@@ -156,9 +167,9 @@ async function bindAccount(message, kAccount) {
 			valid: true
 		});
 		db.write();
-		console.log('Sent %s the code %s', kAccount, code);
 		message.reply('Please check your krunker account for the code (This may take a minute to send. The code will expire in 30min)');
-		// sendUserMsg(kAccount, code);
+		sendUserMsg(kAccount, code);
+		console.log('Sent %s the code %s', kAccount, code);
 	}
 }
 
