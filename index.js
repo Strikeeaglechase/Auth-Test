@@ -110,6 +110,8 @@ async function sendUserMsg(user, msg) {
 	await page.keyboard.type('10');
 	await msgFeild.click();
 	await page.keyboard.type(msg);
+
+	await giftBtn.click();
 	await new Promise(res => setTimeout(res, 3000));
 	await page.screenshot({
 		path: 'example.png'
