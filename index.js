@@ -4,7 +4,9 @@ const Discord = require('discord.js');
 const config = require('dotenv').config().parsed
 db.init({
 	users: [],
-	waitingCodes: []
+	waitingCodes: [],
+	deposits: [],
+
 });
 
 const client = new Discord.Client();
@@ -71,11 +73,28 @@ async function grabMailData() {
 		return true;
 	});
 	const mailData = await page.evaluate(() => {
-		return windows[29].mailData;
+		return windows[29].mailData.d;
 	});
-	console.log(mailData);
 	await browser.close();
+	return mailData;
 };
+
+async function runDeposits() {
+	var mailData = await grabMailData();
+	db.read();
+	//0 = name 3 = amt
+	mailData.forEach(msg => {
+		var args = msg.km_subject.split(' ');
+		var kName = args[0];
+		var amt = args[3];
+		var time = msg.km_datesent;
+		if (!db.data.deposits.find(d => d.time == time && d.name == kName)) {
+			console.log('New deposit from %s of %skr', kName, amt);
+		}
+	});
+
+	setTimeout(runDeposits, 1000 * 60 * 5);
+}
 
 async function loginSocial(page, user, pass) {
 	await page.screenshot({
