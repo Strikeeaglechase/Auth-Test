@@ -58,10 +58,10 @@ async function loginUser(page, user, pass) {
 
 async function grabMailData() {
 	const browser = await puppeteer.launch();
+	const page = await browser.newPage();
+	await page.goto('https://krunker.io/');
 	var mailData;
 	try {
-		const page = await browser.newPage();
-		await page.goto('https://krunker.io/');
 		await loginUser(page, USERNAME, PASSWORD);
 
 		await page.waitForSelector('#mailIcon');
