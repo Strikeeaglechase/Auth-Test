@@ -82,7 +82,6 @@ async function grabMailData() {
 async function runDeposits() {
 	var mailData = await grabMailData();
 	db.read();
-	//0 = name 3 = amt
 	mailData.forEach(msg => {
 		const args = msg.km_subject.split(' ');
 		const kName = args[0];
@@ -104,19 +103,28 @@ async function runDeposits() {
 					}
 				}
 			});
-			console.log('New deposit from %s of %skr. \n Sending %s this code: %s', kName, amt, foundMember, code);
-			db.data.krCodes.push({
-				code: code,
-				amt: amt
-			});
-			db.data.deposits.push({
-				name: kName,
-				time: time,
-				amt: amt
-			});
+			if (!foundMember) {
+				console.log('Error we no longer share a server with %s', foundMember.user.tag);
+				return;
+			}
+			try {
+				console.log('New deposit from %s of %skr. \n Sending %s this code: %s', kName, amt, foundMember.user.tag, code);
+				foundMember.send('Here is your ' + amt + 'kr code ``' + code + '``');
+				db.data.krCodes.push({
+					code: code,
+					amt: amt
+				});
+				db.data.deposits.push({
+					name: kName,
+					time: time,
+					amt: amt
+				});
+			} catch (e) {
+				console.log('Failed to send message');
+			}
 		}
 	});
-
+	db.write();
 	setTimeout(runDeposits, 1000 * 60 * 0.5);
 }
 
@@ -247,6 +255,23 @@ function finishBind(message, code) {
 	}
 }
 
+function redeemKrCode(message, code) {
+	const dbCode = db.get('krCodes', 'code', code);
+	const linkedAccount = db.get('users', 'id', message.author.id, true);
+	if (!linkedAccount) {
+		message.reply('Before using a code please link an account');
+		message.delete();
+	}
+	if (!code) {
+		message.reply('Invalid code');
+		return;
+	}
+	sendUserKr(linkedAccount.krunkerAccount, dbCode.amt, 'Code redeem');
+	message.reply('Code has been redeemed for %skr', dbCode.amt);
+	db.data.krCodes = db.data.krCodes.filter(krCode => krCode.code != dbCode.code);
+	db.write();
+}
+
 client.on('ready', () => {
 	console.log('Logged');
 });
@@ -261,6 +286,9 @@ client.on('message', message => {
 	}
 	if (args[0] == 'code') {
 		finishBind(message, args[1]);
+	}
+	if (args[0] == 'krCode') {
+		redeemKrCode(message, args[1]);
 	}
 });
 
