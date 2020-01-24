@@ -6,7 +6,7 @@ db.init({
 	users: [],
 	waitingCodes: [],
 	deposits: [],
-
+	krCodes: []
 });
 
 const client = new Discord.Client();
@@ -19,7 +19,7 @@ const allowedRate = 1000 * 60 * 30;
 const CODE_TIMEOUT = 1000 * 60 * 30;
 const CODE_LEN = 10;
 
-function genCode() {
+function genCode(CODE_LEN) {
 	const charList = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'.split('');
 	var code = '';
 	while (code.length < CODE_LEN) {
@@ -84,12 +84,36 @@ async function runDeposits() {
 	db.read();
 	//0 = name 3 = amt
 	mailData.forEach(msg => {
-		var args = msg.km_subject.split(' ');
-		var kName = args[0];
-		var amt = args[3];
-		var time = msg.km_datesent;
+		const args = msg.km_subject.split(' ');
+		const kName = args[0];
+		const amt = args[3];
+		const time = msg.km_datesent;
 		if (!db.data.deposits.find(d => d.time == time && d.name == kName)) {
-			console.log('New deposit from %s of %skr', kName, amt);
+			const code = genCode(15);
+			const linkedAccount = db.get('users', 'krunkerAccount', kName, true);
+			if (!linkedAccount) {
+				console.log('%s deposited %skr however has not yet linked their account', kName, amt);
+				return;
+			}
+			var foundMember = undefined;
+			client.guilds.array().forEach(guild => {
+				if (!foundMember) {
+					var mem = guild.members.get(linkedAccount.id);
+					if (mem) {
+						foundMember = mem;
+					}
+				}
+			});
+			console.log('New deposit from %s of %skr. \n Sending %s this code: %s', kName, amt, foundMember, code);
+			db.data.krCodes.push({
+				code: code,
+				amt: amt
+			});
+			db.data.deposits.push({
+				name: kName,
+				time: time,
+				amt: amt
+			})
 		}
 	});
 
@@ -126,7 +150,7 @@ async function loginSocial(page, user, pass) {
 	}, {}, user);
 }
 
-async function sendUserMsg(user, msg) {
+async function sendUserKr(user, amt, msg) {
 	const browser = await puppeteer.launch();
 	const page = await browser.newPage();
 	await page.goto('https://krunker.io/social.html?p=profile&q=' + user);
@@ -195,7 +219,7 @@ async function bindAccount(message, kAccount) {
 		var u = db.get('users', 'id', message.author.id);
 		var d = Date.now();
 		u.lastRanCommand = d;
-		var code = genCode();
+		var code = genCode(CODE_LEN);
 		db.data.waitingCodes.push({
 			code: code,
 			t: d,
@@ -204,7 +228,7 @@ async function bindAccount(message, kAccount) {
 		});
 		db.write();
 		message.reply('Please check your krunker account for the code (This may take a minute to send. The code will expire in 30min)');
-		sendUserMsg(kAccount, code);
+		sendUserKr(kAccount, 10, code);
 		console.log('Sent %s the code %s', kAccount, code);
 	}
 }
