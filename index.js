@@ -148,7 +148,9 @@ async function loginSocial(page, user, pass) {
 		var elms = document.getElementsByClassName('accountButton');
 		elms[0].click();
 	});
-
+	await page.screenshot({
+		path: 'example.png'
+	});
 	await page.waitForFunction((u) => {
 		var elm = document.getElementById('profileName');
 		if (elm && elm.innerText) {
