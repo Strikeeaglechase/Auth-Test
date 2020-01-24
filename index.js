@@ -58,6 +58,7 @@ async function loginUser(page, user, pass) {
 
 async function grabMailData() {
 	const browser = await puppeteer.launch();
+	var mailData;
 	try {
 		const page = await browser.newPage();
 		await page.goto('https://krunker.io/');
@@ -73,7 +74,7 @@ async function grabMailData() {
 			}
 			return true;
 		});
-		const mailData = await page.evaluate(() => {
+		mailData = await page.evaluate(() => {
 			return windows[29].mailData.d;
 		});
 	} catch (e) {
@@ -279,7 +280,7 @@ async function redeemKrCode(message, code) {
 		return;
 	}
 	message.channel.send('Sending you your kr...');
-	db.data.krCodes = db.data.krCodes.filter(krCode => krCode.code != dbCode.code);
+	// db.data.krCodes = db.data.krCodes.filter(krCode => krCode.code != dbCode.code);
 	db.write();
 	await sendUserKr(linkedAccount.krunkerAccount, dbCode.amt, 'Code redeem');
 	message.reply('Code has been redeemed for ' + dbCode.amt + 'kr');
