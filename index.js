@@ -58,29 +58,39 @@ async function loginUser(page, user, pass) {
 
 async function grabMailData() {
 	const browser = await puppeteer.launch();
-	const page = await browser.newPage();
-	await page.goto('https://krunker.io/');
-	await loginUser(page, USERNAME, PASSWORD);
+	try {
+		const page = await browser.newPage();
+		await page.goto('https://krunker.io/');
+		await loginUser(page, USERNAME, PASSWORD);
 
-	await page.waitForSelector('#mailIcon');
-	const mailIcon = await page.$('#mailIcon');
-	await mailIcon.click();
-	await page.waitForFunction(() => {
-		var mList = document.getElementById('mailList');
-		if (!mList || mList.innerText == 'Loading...') {
-			return false;
-		}
-		return true;
-	});
-	const mailData = await page.evaluate(() => {
-		return windows[29].mailData.d;
-	});
+		await page.waitForSelector('#mailIcon');
+		const mailIcon = await page.$('#mailIcon');
+		await mailIcon.click();
+		await page.waitForFunction(() => {
+			var mList = document.getElementById('mailList');
+			if (!mList || mList.innerText == 'Loading...') {
+				return false;
+			}
+			return true;
+		});
+		const mailData = await page.evaluate(() => {
+			return windows[29].mailData.d;
+		});
+	} catch (e) {
+		await page.screenshot({
+			path: 'mail-err.png'
+		});
+		console.log('Mail data failed');
+	}
 	await browser.close();
 	return mailData;
 };
 
 async function runDeposits() {
 	var mailData = await grabMailData();
+	if (!mailData) {
+		return;
+	}
 	db.read();
 	mailData.forEach(msg => {
 		const args = msg.km_subject.split(' ');
@@ -129,9 +139,6 @@ async function runDeposits() {
 }
 
 async function loginSocial(page, user, pass) {
-	await page.screenshot({
-		path: 'example2.png'
-	});
 	await page.waitForSelector('#profileLogin');
 	var loginBtn = await page.$('#profileLogin');
 	await loginBtn.click();
@@ -164,27 +171,30 @@ async function sendUserKr(user, amt, msg) {
 	const browser = await puppeteer.launch();
 	const page = await browser.newPage();
 	await page.goto('https://krunker.io/social.html?p=profile&q=' + user);
-	await loginSocial(page, USERNAME, PASSWORD);
+	try {
+		await loginSocial(page, USERNAME, PASSWORD);
+		await page.evaluate(() => {
+			var elms = document.getElementsByClassName('giftButton');
+			elms[0].click();
+		});
+		const giftFeild = await page.$('#giftIn');
+		const msgFeild = await page.$('#giftMsg');
+		const giftBtn = await page.$('#postSaleBtn');
 
-	await page.evaluate(() => {
-		var elms = document.getElementsByClassName('giftButton');
-		elms[0].click();
-	});
-	const giftFeild = await page.$('#giftIn');
-	const msgFeild = await page.$('#giftMsg');
-	const giftBtn = await page.$('#postSaleBtn');
+		await giftFeild.click();
+		await page.keyboard.type('10');
+		await msgFeild.click();
+		await page.keyboard.type(msg);
 
-	await giftFeild.click();
-	await page.keyboard.type('10');
-	await msgFeild.click();
-	await page.keyboard.type(msg);
+		await giftBtn.click();
 
-	await giftBtn.click();
-	await new Promise(res => setTimeout(res, 3000));
-	await page.screenshot({
-		path: 'example.png'
-	});
-
+	} catch (e) {
+		await page.screenshot({
+			path: 'kr-err.png'
+		});
+		console.log('Send user kr failed');
+		console.log(arguments);
+	}
 	await browser.close();
 };
 
