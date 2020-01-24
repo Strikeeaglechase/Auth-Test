@@ -113,11 +113,11 @@ async function runDeposits() {
 				name: kName,
 				time: time,
 				amt: amt
-			})
+			});
 		}
 	});
 
-	setTimeout(runDeposits, 1000 * 60 * 5);
+	setTimeout(runDeposits, 1000 * 60 * 0.5);
 }
 
 async function loginSocial(page, user, pass) {
