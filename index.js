@@ -54,11 +54,20 @@ async function loginUser(page, user, pass) {
 	}, {}, user);
 }
 
-async function runGameLoginTest() {
+async function grabMailData() {
 	const browser = await puppeteer.launch();
 	const page = await browser.newPage();
 	await page.goto('https://krunker.io/');
 	await loginUser(page, USERNAME, PASSWORD);
+
+	await page.waitForSelector('#mailIcon');
+	const mailIcon = await page.$('#mailIcon');
+	await mailIcon.click();
+	await page.waitForSelector('#mailList');
+	const mailData = await page.evaluate(() => {
+		return windows[29].mailData;
+	});
+	console.log(mailData);
 	await browser.close();
 };
 
@@ -214,3 +223,5 @@ setInterval(() => {
 	db.write();
 }, 60 * 1000);
 // run('Strikeeaglekid');
+
+grabMailData();
