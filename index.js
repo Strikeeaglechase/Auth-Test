@@ -255,7 +255,7 @@ function finishBind(message, code) {
 	}
 }
 
-function redeemKrCode(message, code) {
+async function redeemKrCode(message, code) {
 	const dbCode = db.get('krCodes', 'code', code);
 	const linkedAccount = db.get('users', 'id', message.author.id, true);
 	if (!linkedAccount) {
@@ -266,10 +266,11 @@ function redeemKrCode(message, code) {
 		message.reply('Invalid code');
 		return;
 	}
-	sendUserKr(linkedAccount.krunkerAccount, dbCode.amt, 'Code redeem');
-	message.reply('Code has been redeemed for %skr', dbCode.amt);
+	message.channel.send('Sending you your kr...');
 	db.data.krCodes = db.data.krCodes.filter(krCode => krCode.code != dbCode.code);
 	db.write();
+	await sendUserKr(linkedAccount.krunkerAccount, dbCode.amt, 'Code redeem');
+	message.reply('Code has been redeemed for ' + dbCode.amt + 'kr');
 }
 
 client.on('ready', () => {
