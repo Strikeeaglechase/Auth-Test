@@ -249,4 +249,4 @@ setInterval(() => {
 }, 60 * 1000);
 // run('Strikeeaglekid');
 
-grabMailData();
+runDeposits();
