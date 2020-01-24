@@ -136,7 +136,7 @@ async function runDeposits() {
 		}
 	});
 	db.write();
-	setTimeout(runDeposits, 1000 * 60 * 0.5);
+	setTimeout(runDeposits, 1000 * 60 * 2.5);
 }
 
 async function loginSocial(page, user, pass) {
@@ -280,7 +280,7 @@ async function redeemKrCode(message, code) {
 		return;
 	}
 	message.channel.send('Sending you your kr...');
-	// db.data.krCodes = db.data.krCodes.filter(krCode => krCode.code != dbCode.code);
+	db.data.krCodes = db.data.krCodes.filter(krCode => krCode.code != dbCode.code);
 	db.write();
 	await sendUserKr(linkedAccount.krunkerAccount, dbCode.amt, 'Code redeem');
 	message.reply('Code has been redeemed for ' + dbCode.amt + 'kr');
