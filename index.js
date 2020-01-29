@@ -18,6 +18,7 @@ const PASSWORD = config.PASSWORD;
 const allowedRate = 1000 * 60 * 30;
 const CODE_TIMEOUT = 1000 * 60 * 30;
 const CODE_LEN = 10;
+const SHOW_AMT_ON_CODE = true;
 
 function genCode(CODE_LEN) {
 	const charList = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'.split('');
@@ -99,23 +100,16 @@ async function runDeposits() {
 		const amt = args[3];
 		const time = msg.km_datesent;
 		if (!db.data.deposits.find(d => d.time == time && d.name == kName)) {
-			const code = genCode(15);
+			const code = genCode(10);
+			code = SHOW_AMT_ON_CODE ? amt + 'kr_' + code : code;
 			const linkedAccount = db.get('users', 'krunkerAccount', kName, true);
 			if (!linkedAccount) {
 				console.log('%s deposited %skr however has not yet linked their account', kName, amt);
 				return;
 			}
-			var foundMember = undefined;
-			client.guilds.array().forEach(guild => {
-				if (!foundMember) {
-					var mem = guild.members.get(linkedAccount.id);
-					if (mem) {
-						foundMember = mem;
-					}
-				}
-			});
+			var foundMember = client.fetchUser(linkedAccount.id);
 			if (!foundMember) {
-				console.log('Error we no longer share a server with %s', foundMember.user.tag);
+				console.log('Error: we no longer share a server with %s', foundMember.user.tag);
 				return;
 			}
 			try {
@@ -172,6 +166,7 @@ async function sendUserKr(user, amt, msg) {
 	const browser = await puppeteer.launch();
 	const page = await browser.newPage();
 	await page.goto('https://krunker.io/social.html?p=profile&q=' + user);
+	var failed = false;
 	try {
 		await loginSocial(page, USERNAME, PASSWORD);
 		await page.evaluate(() => {
@@ -188,15 +183,16 @@ async function sendUserKr(user, amt, msg) {
 		await page.keyboard.type(msg);
 
 		await giftBtn.click();
-
 	} catch (e) {
 		await page.screenshot({
 			path: 'kr-err.png'
 		});
 		console.log('Send user kr failed');
 		console.log(arguments);
+		failed = true;
 	}
 	await browser.close();
+	return failed;
 };
 
 async function bindAccount(message, kAccount) {
@@ -274,6 +270,7 @@ async function redeemKrCode(message, code) {
 	if (!linkedAccount) {
 		message.reply('Before using a code please link an account');
 		message.delete();
+		return;
 	}
 	if (!dbCode) {
 		message.reply('Invalid code');
@@ -282,7 +279,10 @@ async function redeemKrCode(message, code) {
 	message.channel.send('Sending you your kr...');
 	db.data.krCodes = db.data.krCodes.filter(krCode => krCode.code != dbCode.code);
 	db.write();
-	await sendUserKr(linkedAccount.krunkerAccount, dbCode.amt, 'Code redeem');
+	var sendKrFailed = false;
+	do {
+		sendKrFailed = await sendUserKr(linkedAccount.krunkerAccount, dbCode.amt, 'Code redeem');
+	} while (sendKrFailed);
 	message.reply('Code has been redeemed for ' + dbCode.amt + 'kr');
 }
 
@@ -313,6 +313,5 @@ setInterval(() => {
 	db.data.waitingCodes = db.data.waitingCodes.filter(c => Date.now() - c.t < CODE_TIMEOUT && c.valid);
 	db.write();
 }, 60 * 1000);
-// run('Strikeeaglekid');
 
 runDeposits();
